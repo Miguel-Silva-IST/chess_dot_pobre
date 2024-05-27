@@ -1,3 +1,6 @@
+#As standard reference, white rook is located at pos [0,0]
+
+
 from enum import Enum
 
 class BoardMapping(Enum):
@@ -50,7 +53,7 @@ class Board:
     def __repr__(self):
         board_str = '' 
         for row in self.board:
-            aux_board_row = map(lambda x: BoardMapping(x).name, row)
+            aux_board_row = list(map(lambda x: None if x is None else BoardMapping(x).name, row))
             board_str+=f'{aux_board_row}\n'
         
         return board_str

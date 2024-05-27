@@ -1,81 +1,86 @@
-from enum import Enum
 from abc import ABC, abstractmethod
-
+from app.colors import WHITE, BLACK
 #nao estou a contabilizar comer peças
 #1 - será que devia criar classes para o movimento das peças em vez de meter tudo numa class?
 #2 - para além de checkar a questao do movimento é preciso checkar o movimentoa a comer a peça
 
 
 
-class LiestPieces(Enum):
+class Piece:
     """
-    ex. WK - white knight
-    
-    1st char:
-    W - white
-    B - black
-    
-    2nd char:
-    P - pawn
-    R - rook
-    K - knight
-    B - bishop
-    Q - queen
-    KI - king
+    Stores for each piece: 
+    1 - board position
+    2 - piece color (0 : "black" , 1 : "white") - instantiate in if no main game
+    3 - moves available directions
+    4 - moves intensity (0 : "can only move 1 box", 1 : "if it can move multiple")
+    5 - piece points 
     """
-    
-    WP = 0
-    WR = 1
-    WK = 2
-    WB = 3
-    WQ = 4
-    WKI = 5
-    BP = 6
-    BR = 7
-    BK = 8
-    BB = 9
-    BQ = 10
-    BKI = 11 
+    def __init__(self, pos, color):
+        self.pos = pos
+        self.color = color 
 
-
-
-class Piece(ABC):
-    def possible_moves(board : list, pos_i : list) -> list:
-        #calculates list of possible moves
-        pass
-    
 
 
 class Pawn(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        piece_moves = [[0,1]]
-        pos_f = [pos_i + m for m in piece_moves]
-        return [pos_f if not board[pos_f[0]][pos_f[1]]]
+
+    def __init__(self, pos, color):
         
-        
+        super().__init__(pos, color)
+        if self.color == WHITE:
+            self.dir_moves = [[1,0]]
+        elif self.color == BLACK:
+            self.dir_moves = [[-1,0]]
+            
+        self.points = 1
+        self.n_moves = 0
         
 
         
 class Rook(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        pass
+    
+    def __init__(self, pos, color):
+                
+        super().__init__(pos, color)
+        self.dir_moves = [[0,1],[0,-1],[1,0],[-1,0]]
+        self.points = 4
+        self.n_moves = 1
+        
 
 class Knight(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        pass
+    
+    def __init__(self, pos, color):
+        
+        super().__init__(pos, color)
+        self.dir_moves = [[1,2],[-1,2],[-1,-2],[1,-2],[2,1],[-2,1],[-2,-1],[2,-1]]
+        self.points = 3
+        self.n_moves = 0
 
 class Bishop(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        pass
+    
+    def __init__(self, pos, color):
+        
+        super().__init__(pos, color)
+        self.dir_moves = [[1,1],[-1,-1],[-1,1],[1,-1]]
+        self.points = 3
+        self.n_moves = 1
 
 class Queen(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        pass
+        
+    def __init__(self, pos, color):
+        
+        super().__init__(pos, color)
+        self.dir_moves = [[1,1],[-1,-1],[-1,1],[1,-1],[0,1],[0,-1],[1,0],[-1,0]]
+        self.points = 6
+        self.n_moves = 1
+
 
 class King(Piece):
-    def possible_moves(board : list, pos_i : list) -> list:
-        pass
-
+        
+    def __init__(self, pos, color):
+        
+        super().__init__(pos, color)
+        self.dir_moves = [[1,1],[-1,-1],[-1,1],[1,-1],[0,1],[0,-1],[1,0],[-1,0]]
+        self.n_moves = 0
 
 
 
@@ -84,4 +89,7 @@ class King(Piece):
 
 
 if __name__ == '__main__':
-     print(LiestPieces.__members__)
+    pawn = Pawn([0,0], WHITE)
+    print(pawn.__class__.__name__)
+    
+     
