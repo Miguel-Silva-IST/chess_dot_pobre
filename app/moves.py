@@ -8,6 +8,9 @@
 #pieces that change move dir - pawn
 from app.colors import WHITE, BLACK
 from app.pieces import *
+from app.board import *
+from app.utils import *
+from app.directions import FRONT, BACK, LEFT, RIGHT
 import copy
 
 
@@ -19,69 +22,37 @@ class PossibleMoves:
     
     def __init__(self, board, piece):
         self._board = board
-        self._piece = piece
-        
-    
-    def check_board_in_boundaries(self,pos):
-        """
-        Retusn 1 if in boundaries, 0 if out
-        """
-        
-        if 0<=pos[0]<=7 and 0<=pos[1]<=7:
-            return 1
-        else:
-            return 0
-    
-    
-    #esta funcao podera ter que ser ajustada porque o que faz sentido é -> piece é instanciado e define-se logo a cor com base no numero. Nao faz sentido haver uma funcao so para ir buscar a cor da peca
-    def get_piece_color(self, number):
-        """
-        Returns 1 if is white piece, and 0 if black
-        """
-        
-        if number<0:
-            return WHITE
-        elif number>0:
-            return BLACK
-        else:
-            raise ValueError('Value is not int')
-    
-    def get_board_square(self, pos):
-        """Returns the value in the square"""
-        
-        return self._board[pos[0]][pos[1]]
-        
+        self._piece = piece      
         
     
     
-    #iterates in all directions to get possible moves
     def check_possible_moves(self):
-        pos_i = self._piece.pos
+        """Iterates in all directions to get possible moves"""
+        
         self.possible_moves = []
         
         for dir in self._piece.dir_moves:
-            pos_f = copy.copy(pos_i)
+            pos_f = copy.deepcopy(self._piece.pos)
             while True:
                 pos_f[0] += dir[0]
-                pos_f[1] += dir[1]
-                
-                val_square = self.get_board_square(pos_f)                 
+                pos_f[1] += dir[1]                 
                 
                 #check board boundaries - if doesnt satisfy then jumps
-                if not self.check_board_in_boundaries(pos_f):
-                    break                    
+                if not check_board_in_boundaries(self._board,pos_f):
+                    break
+                
+                target_piece = self._board.get_board_piece(pos_f)                 
                 
                 #check if empty square
-                if not val_square:
-                    self.possible_moves.append(pos_f)
+                if not target_piece:
+                    self.possible_moves.append(copy.deepcopy(pos_f))
                 
                 #in case not empty verifies if can eat - if yes then adds that pos, else breaks
-                else: 
-                    color_block = self.get_piece_color(val_square)
+                else:
                     
                     #if blocking piece has diff color then can eat and add to pos
-                    if self._piece.color != color_block:
-                        self.possible_moves.append(pos_f)
+                    if self._piece.color != target_piece.color:
+                        self.possible_moves.append(copy.deepcopy(pos_f))
                     
                     #in either case, since blocking piece is there, it stops moving
                     break      
@@ -103,24 +74,22 @@ class PawnMoves(PossibleMoves):
         
         #movements differ depending on side of board
         if self._piece.color == WHITE:
-            diag_pos_r, diag_pos_l = [self._piece.pos[0]+1, self._piece.pos[1]+1], [self._piece.pos[0]+1, self._piece.pos[1]-1]
+            diag_pos_r, diag_pos_l = [self._piece.pos[0]+FRONT, self._piece.pos[1]+RIGHT], [self._piece.pos[0]+FRONT, self._piece.pos[1]+ LEFT]
         elif self._piece.color == BLACK:
-            diag_pos_r, diag_pos_l = [self._piece.pos[0]-1, self._piece.pos[1]+1], [self._piece.pos[0]-1, self._piece.pos[1]-1]
+            diag_pos_r, diag_pos_l = [self._piece.pos[0]+ BACK, self._piece.pos[1]+RIGHT], [self._piece.pos[0]+BACK, self._piece.pos[1]+ LEFT]
         
         #first checks if diag pos is in boundaries, then checks if there is piece to eat
-        if self.check_board_in_boundaries(diag_pos_r):
-            diag_piece_r = self.get_board_square(diag_pos_r)
-            if diag_piece_r:
-                diag_piece_r_color = self.get_piece_color(diag_piece_r)
-                if diag_piece_r_color!= self._piece.color:
+        if check_board_in_boundaries(self._board,diag_pos_r):
+            target_piece_diag_r = self._board.get_board_piece(diag_pos_r)
+            if target_piece_diag_r:
+                if target_piece_diag_r.color!= self._piece.color:
                     diag_moves.append(diag_pos_r)
         
         #first checks if diag pos is in boundaries, then checks if there is piece to eat
-        if self.check_board_in_boundaries(diag_pos_l):
-            diag_piece_l = self.get_board_square(diag_pos_l)
-            if diag_piece_l:
-                diag_piece_l_color = self.get_piece_color(diag_piece_l)
-                if diag_piece_l_color!= self._piece.color:
+        if check_board_in_boundaries(self._board, diag_pos_l):
+            target_piece_diag_l = self._board.get_board_piece(diag_pos_l)
+            if target_piece_diag_l:
+                if target_piece_diag_l.color!= self._piece.color:
                     diag_moves.append(diag_pos_l)
         
         return diag_moves
@@ -130,17 +99,18 @@ class PawnMoves(PossibleMoves):
     def check_first_move(self):
         if self._piece.color == WHITE:
             begin_row = 1
-            move = 2
+            move = FRONT
         if self._piece.color == BLACK:
             begin_row = 6
-            move = -2
+            move = BACK
         
         
         if self._piece.pos[0] == begin_row:
             second_row_pos = [self._piece.pos[0]+move, self._piece.pos[1]]
-            #if no piece in second row then moves
-            if not self.get_board_square(second_row_pos):
-                return [second_row_pos]
+            third_row_pos = [self._piece.pos[0]+2*move, self._piece.pos[1]]
+            #if no piece in second row and third row then moves
+            if (not self._board.get_board_piece(second_row_pos)) and (not self._board.get_board_piece(third_row_pos)):
+                return [third_row_pos]
             else:
                 return []
 
@@ -157,6 +127,13 @@ class PawnMoves(PossibleMoves):
         
         super().check_possible_moves()
         
+        #Added here because pawn is the only piece that cannot eat in its moving direction
+        # so if it has a move to a square with another piece, this move is deleted 
+        if self.possible_moves:
+            pos_f = self.possible_moves[0]
+            if self._board.get_board_piece(pos_f):
+                self.possible_moves = []
+                                
         diag_moves = self.check_diagonal_eat()
         first_pawn_moves = self.check_first_move()
         
@@ -209,8 +186,22 @@ class UpdateBoard:
 
 if __name__ == '__main__':
     pawn = Pawn([1,0],1)
-    board1 = [[-2, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, 1, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]]
-    board2 = [[-2, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [None, 1, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]]
-    pawn_moves = PawnMoves(board2, pawn)
-    pawn_moves.check_possible_moves()
-    print(pawn_moves.possible_moves)
+    board1 = Board()
+    board2 = Board([[-2, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [None, 1, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
+    board3 = Board([[None, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [-2, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
+
+    
+    rook1 = Rook([2,0],1)
+    rook2 = Rook([0,0],1)
+    
+      
+    rook_moves1 = RookMoves(board3, rook1)
+    print('Testing white rook moves at [2,0]')
+    print('Board 3->',board3)
+    rook_moves1.check_possible_moves()
+    print(rook_moves1.possible_moves)
+    
+    
+    rook_moves2 = RookMoves(board3, rook2)
+    rook_moves2.check_possible_moves()
+    print(rook_moves2.possible_moves)

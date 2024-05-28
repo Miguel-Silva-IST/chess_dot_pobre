@@ -1,0 +1,4 @@
+FRONT = 1
+BACK = -1
+RIGHT = 1
+LEFT = -1

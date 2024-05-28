@@ -1,0 +1,1 @@
+-Performance do jogo está baixa porque está mais focado em OOP - importante testar depois se a procura no board por pecas sem iniciar objetos piece fica muito mais eficiente 
