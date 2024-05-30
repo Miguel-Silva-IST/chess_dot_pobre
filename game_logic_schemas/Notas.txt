@@ -1,1 +1,7 @@
 -Performance do jogo está baixa porque está mais focado em OOP - importante testar depois se a procura no board por pecas sem iniciar objetos piece fica muito mais eficiente 
+
+
+- Sendo que as funções de moves usam init de com objeto piece, julgo que faria sentido verficar o type só porque podemos inicicar um bishop_move com um cavalo
+
+
+- Fiquei na implementação do verify_check - falta checkar os cavalos que ainda nao estao vistos. Algumas otimizações já foram pensadas mas parece que se consegue otimizar mais os checks.

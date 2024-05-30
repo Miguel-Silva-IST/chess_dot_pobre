@@ -4,6 +4,7 @@
 from enum import Enum
 from app.colors import BLACK, WHITE
 from app.pieces import *
+from app.utils import *
 
 class BoardMapping(Enum):
     """
@@ -68,6 +69,7 @@ class Board:
     
     def get_board_piece(self,pos):
         """From board position retrieves piece object"""
+        
         square_val = self.board[pos[0]][pos[1]]
         if not square_val:
             return None

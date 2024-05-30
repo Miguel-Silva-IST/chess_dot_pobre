@@ -156,7 +156,12 @@ class KnightMoves(PossibleMoves):
 class BishopMoves(PossibleMoves):
     pass
 
-class King(PossibleMoves):
+
+class QueenMoves(PossibleMoves):
+    pass
+
+
+class KingMoves(PossibleMoves):
     
     def check_rock_n_roll(self):
         pass
@@ -172,9 +177,109 @@ class King(PossibleMoves):
 
 
 
+#notes - 
+# sequence: 
+# 1- after player 1 moving one piece, we need to check if king from player 1 is checked.
+# 2- before starting one move, player needs to see if self king is checked. If so, only moves player can do is to defend king 
+# 3- analyze point2 : ... 
+
+
+#check logic:  
+#1 - based on king pos, see in which directions king can move from -> those are the directions that it can be checked, otherwhise is covered
+#2 - check possible horses - only pieces that can jump - check if there are enemy knights surrounding king   
+
+#Check logic when moving piece
+#1 - if player 1 moves one piece and players 1 king gets checked, then all moves in that direction cant be taken
+#2 - 
+
+
+
+#two types of checks - > 1 move piece results in self check, 2 - play start king is checked 
+
+
+#Only makes scense to check if king was checked after a move if that move was in line with king ...
+
 class VerifyCheck:
-    def __init__(self):
-        pass
+    """
+    Calculates if king is in check, based on oponent move or self move
+    (move of a knight uncovering the king for example)
+    """
+      
+    def __init__(self, board, piece, new_pos):
+        self.__board = board
+        self.__piece = piece
+        self.__new_pos = new_pos
+    
+    
+    def produce_new_move_board(self):
+        """
+        Replaces the current board with the new board after piece movement 
+        """
+        
+        new_board = copy.deepcopy(self.__board)
+        old_pos = self.__piece.pos
+        
+        new_board[self.__new_pos[0]][self.__new_pos[1]], new_board[old_pos[0]][old_pos[1]] = new_board[old_pos[0]][old_pos[1]], new_board[self.__new_pos[0]][self.__new_pos[1]]
+        
+        self.__board =new_board 
+        
+    
+    
+    def verify_check(self):
+        """Verifies if piece move results in check"""
+        
+        king = self.find_king(self.__piece)
+        
+        if not verify_piece_in_line_king(self.__piece, king):
+            return 0
+        
+        #1 See in which directions king can be atacked first
+        #goes in every dir and checks if there are enemy rooks/queens in lines, enemy queens/bishops in diagonals - dont forget to verify pawns
+        
+        for dir, dir_dsc in zip(King().dir_moves, ['D','D','D','D', 'H', 'H','H','H']):
+            square = copy.deepcopy(king) 
+            while True:
+                
+                square[0] += dir[0]
+                square[1] += dir[1]                 
+                
+                #check board boundaries - if doesnt satisfy then jumps
+                if not check_board_in_boundaries(self.__board,square):
+                    break
+                
+                blocking_piece = self._board.get_board_piece(square)
+                
+                if blocking_piece.color ==  self.__piece.color:
+                    break
+                
+                else:
+                    #blocking piece is enemy piece
+                    
+                    #if is diagonal direction
+                    if dir_dsc == 'D':
+                        
+                        if (blocking_piece.__name__ == 'Bishop') or (blocking_piece.__name__ == 'Queen'):
+                            return 1
+                        elif blocking_piece.__name__ == 'Pawn':
+                            #moving in same direction and oposite way to see if pawn is close to king to atack
+                             if (blocking_piece.pos[0] - dir[0] == king.pos[0]) and (blocking_piece.pos[1] - dir[1] == king.pos[1]):
+                                 return 1    
+                    
+                    #if is horizontal direction                    
+                    elif dir_dsc == 'H':
+                        if (blocking_piece.__name__ == 'Rook') or (blocking_piece.__name__ == 'Queen'):
+                            return 1
+        
+        
+        
+        
+        #2 After check horses
+        NotImplementedError
+        
+        
+        
+        
+        
 
 
 
