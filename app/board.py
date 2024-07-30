@@ -4,7 +4,6 @@
 from enum import Enum
 from app.colors import BLACK, WHITE
 from app.pieces import *
-from app.utils import *
 
 class BoardMapping(Enum):
     """

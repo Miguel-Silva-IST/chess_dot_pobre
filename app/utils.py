@@ -4,8 +4,6 @@ from app.colors import BLACK, WHITE
 from app.board import *
 import copy
 
-
-
 def check_board_in_boundaries(board,pos):
     """
     Retusn 1 if in boundaries, 0 if out
@@ -18,20 +16,21 @@ def check_board_in_boundaries(board,pos):
 
 
 
-def find_king(piece, board):
+def find_king(player, board):
     """Returns king value"""
     
-    if piece.color == WHITE:
-        king_val = BoardMapping('WKI').val
-    elif piece.color == BLACK:
-        king_val == BoardMapping('BKI').val
+    if player.color == WHITE:
+        king_val = BoardMapping['WKI'].value
+    elif player.color == BLACK:
+        king_val == BoardMapping['BKI'].value
     
     
-    board_size = len(board)
+    board_state = board.board
+    board_size = len(board_state)
     
     for r in range(board_size):
         for c in range(board_size):
-            if board_size[r][c] == king_val:
+            if board_state[r][c] == king_val:
                 king_pos = [r,c]
                 break
     

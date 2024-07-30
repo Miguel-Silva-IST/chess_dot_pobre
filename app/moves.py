@@ -7,10 +7,12 @@
 #EXCEPTION - MOVEMENTS ARE OPOSIT IF WHITE/BLACK PIECES FOR SOME PIECES
 #pieces that change move dir - pawn
 from app.colors import WHITE, BLACK
-from app.pieces import *
-from app.board import *
 from app.utils import *
 from app.directions import FRONT, BACK, LEFT, RIGHT
+from app.player import *
+from app.board import *
+from app.pieces import *
+from app.move_registry import *
 import copy
 
 
@@ -174,6 +176,16 @@ class KingMoves(PossibleMoves):
 
 
 
+#register moves in class, to avoid circular import
+MovesRegistry.register("Pawn", PawnMoves)
+MovesRegistry.register("Rook", RookMoves)
+MovesRegistry.register("Knight", KnightMoves)
+MovesRegistry.register("Bishop", BishopMoves)
+MovesRegistry.register("Queen", QueenMoves)
+MovesRegistry.register("King", KingMoves)
+
+
+
 
 
 
@@ -205,87 +217,105 @@ class VerifyCheck:
     (move of a knight uncovering the king for example)
     """
       
-    def __init__(self, board, piece, new_pos):
-        self.__board = board
-        self.__piece = piece
-        self.__new_pos = new_pos
+    def __init__(self, board, player, piece = None, new_pos = None): # what if i want to check if white king is checked regardless of moved piece...
+        #Piece and new_pos are used for verify if new move results in self check 
+        self._board = board
+        self._piece = piece
+        self._new_pos = new_pos
+        self._player = player
+        self._new_board = None
     
     
     def produce_new_move_board(self):
         """
-        Replaces the current board with the new board after piece movement 
+         Creates new board to verify if new play results in self check 
         """
         
-        new_board = copy.deepcopy(self.__board)
-        old_pos = self.__piece.pos
+        new_board = copy.deepcopy(self._board)
+        old_pos = self._piece.pos
         
-        new_board[self.__new_pos[0]][self.__new_pos[1]], new_board[old_pos[0]][old_pos[1]] = new_board[old_pos[0]][old_pos[1]], new_board[self.__new_pos[0]][self.__new_pos[1]]
+        new_board[self._new_pos[0]][self._new_pos[1]], new_board[old_pos[0]][old_pos[1]] = new_board[old_pos[0]][old_pos[1]], new_board[self._new_pos[0]][self._new_pos[1]]
         
-        self.__board =new_board 
+        self._new_board =new_board 
         
     
     
     def verify_check(self):
-        """Verifies if piece move results in check"""
+        """Verifies if target king is in check"""
+        #if new_board var is initiated it calculates if new board is in check
+        #else it calculates if current board is in check
+        if self._new_board:
+            board = self._new_board
+        else:
+            board = self._board
+
         
-        king = self.find_king(self.__piece)
+        king = find_king(self._player, board)
         
-        if not verify_piece_in_line_king(self.__piece, king):
-            return 0
+        #doesnt work if a piece of enemy gets moved between my king and self played piece...
+        #if not verify_piece_in_line_king(self._piece, king):
+        #    return 0
         
         #1 See in which directions king can be atacked first
         #goes in every dir and checks if there are enemy rooks/queens in lines, enemy queens/bishops in diagonals - dont forget to verify pawns
         
+        #D - diagonal atack , H - horizontal/vertical atack
         for dir, dir_dsc in zip(King().dir_moves, ['D','D','D','D', 'H', 'H','H','H']):
-            square = copy.deepcopy(king) 
+            square = copy.deepcopy(king).pos 
             while True:
                 
                 square[0] += dir[0]
                 square[1] += dir[1]                 
                 
                 #check board boundaries - if doesnt satisfy then jumps
-                if not check_board_in_boundaries(self.__board,square):
+                if not check_board_in_boundaries(board,square):
                     break
                 
-                blocking_piece = self._board.get_board_piece(square)
+                blocking_piece = board.get_board_piece(square)
                 
-                if blocking_piece.color ==  self.__piece.color:
-                    break
-                
-                else:
-                    #blocking piece is enemy piece
+                if blocking_piece:
+                    if blocking_piece.color ==  self._player.color:
+                        break
                     
-                    #if is diagonal direction
-                    if dir_dsc == 'D':
+                    else:
+                        #blocking piece is enemy piece
                         
-                        if (blocking_piece.__name__ == 'Bishop') or (blocking_piece.__name__ == 'Queen'):
-                            return 1
-                        elif blocking_piece.__name__ == 'Pawn':
-                            #moving in same direction and oposite way to see if pawn is close to king to atack
-                             if (blocking_piece.pos[0] - dir[0] == king.pos[0]) and (blocking_piece.pos[1] - dir[1] == king.pos[1]):
-                                 return 1    
-                    
-                    #if is horizontal direction                    
-                    elif dir_dsc == 'H':
-                        if (blocking_piece.__name__ == 'Rook') or (blocking_piece.__name__ == 'Queen'):
-                            return 1
+                        #if is diagonal direction
+                        if dir_dsc == 'D':
+                            
+                            if (blocking_piece.__class__.__name__ == 'Bishop') or (blocking_piece.__class__.__name__ == 'Queen'):
+                                return 1
+                            elif blocking_piece.__class__.__name__ == 'Pawn':
+                                #moving in same direction and oposite way to see if pawn is close to king to atack
+                                if (blocking_piece.pos[0] - dir[0] == king.pos[0]) and (blocking_piece.pos[1] - dir[1] == king.pos[1]):
+                                    return 1    
+                        
+                        #if is horizontal direction                    
+                        elif dir_dsc == 'H':
+                            if (blocking_piece.__class__.__name__ == 'Rook') or (blocking_piece.__class__.__name__ == 'Queen'):
+                                return 1
         
         
         
         
         #2 After check horses
-        NotImplementedError
-        
-        
-        
-        
+        for dir in Knight().dir_moves:
+            square = copy.deepcopy(king).pos
+            square[0] += dir[0]
+            square[1] += dir[1]
+
+            #check board boundaries - if doesnt satisfy then jumps
+            if not check_board_in_boundaries(board,square):
+                continue
+
+            blocking_piece = board.get_board_piece(square)
+            #oponent knight atacking king
+            if blocking_piece.__class__.__name__ == 'Knight' and blocking_piece.color!=self._player.color:
+                return 1
         
 
-
-
-class UpdateBoard:
-    pass
-
+        #if passes all scenarios then is not in check
+        return 0
 
 
 
@@ -294,6 +324,9 @@ if __name__ == '__main__':
     board1 = Board()
     board2 = Board([[-2, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [None, 1, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
     board3 = Board([[None, -3, -4, -5, -6, -4, -3, -2], [-1, -1, -1, -1, -1, -1, -1, -1], [-2, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
+    board4 = Board([[None, -3, -4, -5, -6, -4, -3, -2], [None, None, None, None, None, None, None, None], [-2, None, None, None, None, None, None, None], [None, None, None, None, 2, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
+    board5 = Board([[None, -3, -4, -5, -6, -4, -3, -2], [None, None, None, None, None, None, None, None], [-2, None, None, None, None, None, 4, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])
+    board6 = Board([[None, -3, -4, -5, -6, -4, -3, -2], [None, None, None, None, None, -1, None, None], [-2, None, None, None, None, None, 4, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [None, None, None, None, None, None, None, None], [1, None, 1, 1, 1, 1, 1, 1], [2, 3, 4, 5, 6, 4, 3, 2]])    
 
     
     rook1 = Rook([2,0],1)
@@ -310,3 +343,25 @@ if __name__ == '__main__':
     rook_moves2 = RookMoves(board3, rook2)
     rook_moves2.check_possible_moves()
     print(rook_moves2.possible_moves)
+
+
+    print('Board 4->',board4)
+    player = Player(WHITE)
+    verify_check = VerifyCheck(board4, player)
+    result = verify_check.verify_check()
+    print(result)
+
+
+
+    print('Board 5->',board5)
+    player = Player(WHITE)
+    verify_check = VerifyCheck(board5, player)
+    result = verify_check.verify_check()
+    print(result)
+
+
+    print('Board 6->',board6)
+    player = Player(WHITE)
+    verify_check = VerifyCheck(board6, player)
+    result = verify_check.verify_check()
+    print(result)

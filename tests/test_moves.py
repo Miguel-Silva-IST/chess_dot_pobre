@@ -1,5 +1,7 @@
 import unittest
 from app.moves import *
+from app.board import *
+
 
 
 
